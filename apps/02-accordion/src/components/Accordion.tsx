@@ -1,34 +1,56 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import './Accordion.css';
+import { AccordionItem } from './AccordionItem';
 
 export interface AccordionProps {
-  data: AccordionItemProps[];
+  data: AccordionItemData[];
+  enableMultiData?: boolean;
 }
 
-interface AccordionItemProps {
+export interface AccordionItemData {
   index: number;
   title: string;
   content: string;
 }
 
-export const Accordion = ({ data }: AccordionProps) => {
-  const [selected, setSelected] = useState<number | null>(null);
+export const Accordion = ({
+  data,
+  enableMultiData = false,
+}: AccordionProps) => {
+  const [selected, setSelected] = useState<number[]>([]);
 
-  if (!data) {
+  if (!data?.length) {
     return <div>No data provided!</div>;
   }
 
+  useEffect(() => {
+    setSelected([]);
+  }, [enableMultiData]);
+
+  const handleClick = (index: number) => {
+    setSelected((prev) => {
+      if (prev.includes(index)) {
+        return prev.filter((i) => i !== index);
+      }
+
+      if (!enableMultiData) {
+        return [index];
+      }
+
+      return [...prev, index];
+    });
+  };
+
   return (
-    <div className="wrapper">
+    <div className="accordion-wrapper">
       <div className="accordion">
         {data.map((dataItem) => (
-          <div
+          <AccordionItem
             key={dataItem.index}
-            className="accordion-item"
-            onClick={() => setSelected(dataItem.index)}
-          >
-            <div>{dataItem.title}</div>
-            {selected === dataItem.index && <div>{dataItem.content}</div>}
-          </div>
+            item={dataItem}
+            isOpen={selected.includes(dataItem.index)}
+            onClick={() => handleClick(dataItem.index)}
+          />
         ))}
       </div>
     </div>
