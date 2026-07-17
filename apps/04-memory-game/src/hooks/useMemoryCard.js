@@ -1,69 +1,78 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { shuffle } from 'lodash';
 
+const createDeck = (images) =>
+  shuffle([...images, ...images]).map((image, id) => ({
+    id,
+    image,
+    isFlipped: false,
+    isMatched: false,
+  }));
+
+const checkMatch = (cards, [first, second]) =>
+  cards.map((card) =>
+    card.id === first.id || card.id === second.id
+      ? { ...card, isMatched: true }
+      : card
+  );
+
+const hideCards = (cards, [first, second]) =>
+  cards.map((card) =>
+    card.id === first.id || card.id === second.id
+      ? { ...card, isFlipped: false }
+      : card
+  );
+
 export const useMemoryCard = (images) => {
-  const [cards, setCards] = useState(() => {
-    const duplicate = [...images, ...images];
-    return shuffle(duplicate).map((img, idx) => ({
-      id: idx,
-      image: img,
-      isFlipped: false,
-      isMatched: false,
-    }));
-  });
+  const [cards, setCards] = useState(() => createDeck(images));
+  const [flippedIds, setFlippedIds] = useState([]);
+  const [isLocked, setIsLocked] = useState(false);
 
-  const [flippedCards, setFlippedCards] = useState([]);
+  const flipCard = useCallback(
+    (id) => {
+      if (isLocked) return;
 
-  const flipCard = (id) => {
-    if (flippedCards.length >= 2) return;
+      const card = cards.find((c) => c.id === id);
+      if (!card || card.isFlipped || card.isMatched) return;
 
-    const card = cards.find((card) => card.id === id);
-    if (card.isFlipped || card.isMatched) return;
-
-    setCards((prev) =>
-      prev.map((card) => (card.id === id ? { ...card, isFlipped: true } : card))
-    );
-    setFlippedCards((prev) => [...prev, card]);
-  };
+      setCards((prev) =>
+        prev.map((c) => (c.id === id ? { ...c, isFlipped: true } : c))
+      );
+      setFlippedIds((prev) => [...prev, id]);
+    },
+    [cards, isLocked]
+  );
 
   useEffect(() => {
-    if (flippedCards.length !== 2) return;
+    if (flippedIds.length !== 2) return;
 
-    const [first, second] = flippedCards;
+    setIsLocked(true);
+
+    const [firstId, secondId] = flippedIds;
+    const first = cards.find((c) => c.id === firstId);
+    const second = cards.find((c) => c.id === secondId);
+
     if (first.image === second.image) {
-      setCards((prev) =>
-        prev.map((card) =>
-          card.id === first.id || card.id === second.id
-            ? { ...card, isMatched: true }
-            : card
-        )
-      );
-      setFlippedCards([]);
-    } else {
-      setTimeout(() => {
-        setCards((prev) =>
-          prev.map((card) =>
-            card.id === first.id || card.id === second.id
-              ? { ...card, isFlipped: false }
-              : card
-          )
-        );
-        setFlippedCards([]);
-      }, 1000);
+      setCards((prev) => checkMatch(prev, [first, second]));
+      setFlippedIds([]);
+      setIsLocked(false);
+      return;
     }
-  }, [flippedCards]);
 
-  const resetGame = () => {
-    const duplicate = [...images, ...images];
-    const shuffled = shuffle(duplicate).map((img, idx) => ({
-      id: idx,
-      image: img,
-      isFlipped: false,
-      isMatched: false,
-    }));
-    setCards(shuffled);
-    setFlippedCards([]);
-  };
+    const timer = setTimeout(() => {
+      setCards((prev) => hideCards(prev, [first, second]));
+      setFlippedIds([]);
+      setIsLocked(false);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [flippedIds, cards]);
+
+  const resetGame = useCallback(() => {
+    setCards(createDeck(images));
+    setFlippedIds([]);
+    setIsLocked(false);
+  }, [images]);
 
   return { cards, flipCard, resetGame };
 };

@@ -9,12 +9,14 @@ export const MemoryGame = ({ images }) => {
       <h1 className="game-title">Memory Game</h1>
 
       {isAllCardsMatched && (
-        <div className="victory-message"> Parabéns! Você venceu!</div>
-      )}
+        <>
+          <div className="victory-message"> Parabéns! Você venceu!</div>
 
-      <button className="reset-button" onClick={resetGame}>
-        Reiniciar Jogo
-      </button>
+          <button className="reset-button" onClick={resetGame}>
+            Reiniciar Jogo
+          </button>
+        </>
+      )}
 
       <div className="cards-grid">
         {cards.map((card) => (
