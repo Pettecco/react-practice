@@ -3,5 +3,5 @@ export interface HackerNewsArticle {
   score: number;
   title: string;
   url: string;
-  author: string;
+  by: string;
 }
